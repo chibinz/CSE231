@@ -1,4 +1,9 @@
-build/
+Build/
+Reference/
+
+# LLVM bitcode / assembly files
+*.bc
+*.ll
 
 # Prerequisites
 *.d
