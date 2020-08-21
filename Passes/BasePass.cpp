@@ -15,7 +15,9 @@ struct BasePass : public PassInfoMixin<BasePass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
     // Now that you have a reference to a function,
     // do whatever you want to with it.
-    return PreservedAnalyses::none();
+
+    // Nothing is changed, so all previous analyses are preserved.
+    return PreservedAnalyses::all();
   }
 };
 } // namespace
