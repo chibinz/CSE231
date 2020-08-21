@@ -1,3 +1,5 @@
+build/
+
 # Prerequisites
 *.d
 
@@ -12,7 +14,7 @@
 *.pch
 
 # Compiled Dynamic libraries
-*.so
+# *.so
 *.dylib
 *.dll
 
