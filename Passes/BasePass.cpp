@@ -3,9 +3,9 @@
 
 using namespace llvm;
 
-static char PASS_NAME[] = "BasePass";
-static char PASS_VERSION[] = "v0.1";
-static char ARGUMENT_NAME[] = "base-pass";
+static auto PASS_NAME = "BasePass";
+static auto PASS_VERSION = "v0.1";
+static auto ARGUMENT_NAME = "base-pass";
 
 /// All the tutorials I've seen seems to put their own pass
 /// in an anonymous namespace

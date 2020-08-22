@@ -1,5 +1,6 @@
 Build/
 Reference/
+.vscode/
 
 # LLVM bitcode / assembly files
 *.bc
