@@ -5,3 +5,4 @@ project('CSE231', 'c', 'cpp',
 llvm_dep = dependency('llvm')
 
 shared_library('CountStaticInstructions', 'Passes/CountStaticInstructions.cpp', dependencies: llvm_dep)
+shared_library('CountDynamicInstructions', 'Passes/CountDynamicInstructions.cpp', dependencies: llvm_dep)

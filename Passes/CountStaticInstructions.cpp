@@ -1,7 +1,7 @@
+#include <map>
+
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-
-#include <map>
 
 using namespace llvm;
 
