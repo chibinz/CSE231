@@ -32,7 +32,7 @@ struct CountStaticInstrPass : public PassInfoMixin<CountStaticInstrPass> {
       }
     }
 
-    // Iterate over map to print all instructions
+    // Iterate over map to print out instruction counts
     for (auto &i : InstrCount) {
       errs() << i.first << "\t" << i.second << "\n";
     }

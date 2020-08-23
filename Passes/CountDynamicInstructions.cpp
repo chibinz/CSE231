@@ -16,42 +16,54 @@ static auto ARGUMENT_NAME = "cdi";
 namespace {
 struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    // Get context to construct function type
+    // Modules, Functions, BasicBlocks are often compacted by their initials
     auto M = F.getParent();
+    // Context is necessary for getting types
     auto &CTX = M->getContext();
 
     auto i32Ty = IntegerType::getInt32Ty(CTX);
-    auto updateType =
+    auto updateType = // (return type, {parameter type, ...}, is_variadic)
         FunctionType::get(IntegerType::getVoidTy(CTX), {i32Ty, i32Ty}, false);
-    FunctionCallee updateFunc =
+    auto updateFunc = // (symbol name, function type)
         M->getOrInsertFunction("__updateInstrCount__", updateType);
 
+    // Temporary map for storing instruction counts in each basic block
+    // Modified at compile time
     std::map<unsigned, int> instrCount;
-    Instruction *terminator;
 
     for (auto &BB : F) {
       for (auto &Instr : BB) {
         mapInsertOrIncrement(instrCount, Instr.getOpcode(), 1);
-        terminator = BB.getTerminator();
       }
 
+      // For each entry (opcode, count) in the temporary map,
+      // insert a call to `__updateInstrCount__` before any `br`
+      // instruction, i.e exiting the basic block.
       for (auto &pair : instrCount) {
-        Value *key = ConstantInt::get(i32Ty, pair.first);
-        Value *value = ConstantInt::get(i32Ty, pair.second);
+        auto terminator = BB.getTerminator();
+        auto key = ConstantInt::get(i32Ty, pair.first);
+        auto value = ConstantInt::get(i32Ty, pair.second);
+        // Insert `updateFunc` with argument (key, value) before `terminator`
         CallInst::Create(updateFunc, {key, value}, "", terminator);
       }
 
       instrCount.clear();
     }
 
+    // Insert a call to `__printInstrCount__` to print out dynamic instruction
+    // counts before main function returns
     if (F.getName() == "main") {
       auto printType = FunctionType::get(IntegerType::getVoidTy(CTX), false);
       auto printFunc = M->getOrInsertFunction("__printInstrCount__", printType);
-      // Last instruction of main function
-      auto lastInstr = F.back().getTerminator();
-      CallInst::Create(printFunc, "", lastInstr);
+      auto mainRet = F.back().getTerminator();
+      CallInst::Create(printFunc, "", mainRet);
     }
 
+    // Since we inserted some instructions, conservatively tell `opt`
+    // that nothing is preserved.
+    // If you know what you're doing, a better idea would be:
+    // `auto analyses = PreservedAnalyses::all();`
+    // `analyses.abandon(...); ...`
     return PreservedAnalyses::none();
   }
 };
