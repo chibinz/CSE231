@@ -1,5 +1,6 @@
 #include <map>
 
+#include "HelperFunctions.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Type.h"
@@ -11,15 +12,6 @@ using namespace llvm;
 static auto PASS_NAME = "CountDynamicInstrPass";
 static auto PASS_VERSION = "v0.1";
 static auto ARGUMENT_NAME = "cdi";
-
-template <typename T>
-static void mapInsertOrIncrement(std::map<T, int> &map, T key, int count) {
-  if (map.find(key) == map.end()) {
-    map.insert({key, count});
-  } else {
-    map[key] += count;
-  }
-}
 
 namespace {
 struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {

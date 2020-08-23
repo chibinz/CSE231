@@ -1,5 +1,6 @@
 #include <map>
 
+#include "HelperFunctions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 
@@ -24,13 +25,10 @@ struct CountStaticInstrPass : public PassInfoMixin<CountStaticInstrPass> {
         // pointer will be the same.
         // That's why you can use it as the key for the map.
         auto InstrName = Instr.getOpcodeName();
-        if (InstrCount.find(InstrName) == InstrCount.end()) {
-          // If intruction is not previously seen, add it to InstrCount map
-          InstrCount.insert({InstrName, 1});
-        } else {
-          // Otherwise increment count
-          InstrCount[InstrName] += 1;
-        }
+
+        // If intruction is not previously seen, add it to InstrCount map
+        // Otherwise increment count
+        mapInsertOrIncrement(InstrCount, InstrName, 1);
       }
     }
 
@@ -44,7 +42,6 @@ struct CountStaticInstrPass : public PassInfoMixin<CountStaticInstrPass> {
   }
 };
 } // namespace
-
 
 extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
