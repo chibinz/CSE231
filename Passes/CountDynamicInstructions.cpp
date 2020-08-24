@@ -40,12 +40,12 @@ struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {
       // For each entry (opcode, count) in the temporary map,
       // insert a call to `__updateInstrCount__` before any `br`
       // instruction, i.e exiting the basic block.
-      for (auto &pair : instrCount) {
+      for (auto &[key, value] : instrCount) {
         auto terminator = BB.getTerminator();
-        auto key = ConstantInt::get(i32Ty, pair.first);
-        auto value = ConstantInt::get(i32Ty, pair.second);
+        auto opcode = ConstantInt::get(i32Ty, key);
+        auto count = ConstantInt::get(i32Ty, value);
         // Insert `updateFunc` with argument (key, value) before `terminator`
-        CallInst::Create(updateFunc, {key, value}, "", terminator);
+        CallInst::Create(updateFunc, {opcode, count}, "", terminator);
       }
 
       instrCount.clear();
@@ -55,7 +55,8 @@ struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {
     // counts before main function returns
     if (F.getName() == "main") {
       auto printType = FunctionType::get(IntegerType::getVoidTy(CTX), false);
-      auto printFunc = M->getOrInsertFunction("__printInstrCount__", printType);
+      auto printFunc =
+          M->getOrInsertFunction("__printAndClearInstrCount__", printType);
       auto mainRet = F.back().getTerminator();
       CallInst::Create(printFunc, "", mainRet);
     }
