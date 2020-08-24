@@ -19,12 +19,12 @@ struct CountStaticInstrPass : public PassInfoMixin<CountStaticInstrPass> {
     // Iterate over all basic blocks in function
     for (auto &BB : F) {
       // Iterate over all instructions in basic block
-      for (auto &Instr : BB) {
+      for (auto &I : BB) {
         // Note that `getOpcodeName` returns const char *, a fixed pointer.
         // As long as the instruction have the same opcode name, the returned
         // pointer will be the same.
         // That's why you can use it as the key for the map.
-        auto InstrName = Instr.getOpcodeName();
+        auto InstrName = I.getOpcodeName();
 
         // If intruction is not previously seen, add it to InstrCount map
         // Otherwise increment count

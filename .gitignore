@@ -2,6 +2,8 @@ Build/
 Reference/
 .vscode/
 
+*.fish
+
 # LLVM bitcode / assembly files
 *.bc
 *.ll

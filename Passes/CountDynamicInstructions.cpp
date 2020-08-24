@@ -16,7 +16,8 @@ static auto ARGUMENT_NAME = "cdi";
 namespace {
 struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    // Modules, Functions, BasicBlocks are often compacted by their initials
+    // LLVM Module, Context, Function, BasicBlock, and Instruction
+    // are often abbreviated by their initials
     auto M = F.getParent();
     // Context is necessary for getting types
     auto &CTX = M->getContext();
@@ -32,8 +33,8 @@ struct CountDynamicInstrPass : public PassInfoMixin<CountDynamicInstrPass> {
     std::map<unsigned, int> instrCount;
 
     for (auto &BB : F) {
-      for (auto &Instr : BB) {
-        mapInsertOrIncrement(instrCount, Instr.getOpcode(), 1);
+      for (auto &I : BB) {
+        mapInsertOrIncrement(instrCount, I.getOpcode(), 1);
       }
 
       // For each entry (opcode, count) in the temporary map,
