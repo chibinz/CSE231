@@ -1,5 +1,5 @@
 # CSE231
-Notes, project following UC San Diego's Advanced Compilers course
+Notes and projects following UC San Diego's Advanced Compilers course
 
 ## Collecting Static Instruction Counts
 
