@@ -46,3 +46,41 @@ This sections mainly aims to teach us how to insert function calls. In LLVM it u
 - `opt ... -S` can directly output LLVM assembly, no need to use `llvm-dis`.
 - Using the provided runtime library `lib231` requires you to construct arrays of key and value at compile time, which can be a bit complicated. My solution is to simply insert a function call for every opcode. Overhead is not an issue here.:)
 - You can `.cpp .ll` files together, and clang will still produce an executable happily.
+
+## Profiling Branch Bias
+The main goal of section, I assume, is to teach you how to filter for a specific type of instruction, in this case the conditional branch instruction. There are probably a dozen ways to do that, I'll list 3 ways that I found comfortable to use in the following:
+```C++
+// Filter by checking instruction opcode
+if (Instr.getOpcode() == Instruction::Br) {
+    // Instr is indeed a branch instruction
+}
+
+// Filter by downcasting
+BranchInst* BrInstr = dyn_cast<BranchInst>(Instr);
+if (Instr != nullptr) {
+    // `dyn_cast` is an LLVM helper function that attempts to cast a pointer
+    // to an instance of a base class to its derived class, and returns
+    // a `nullptr` if it fails to do so.
+}
+
+// Filter by instruction name
+if (Instr.getOpcodeName() == "br") {
+    // Manipulate `Instr`
+}
+```
+The benefit of using `Instruction::getOpcode` is that its return type is `unsigned`. Scenario's in which you have to deal with various types of instructions can be handled efficiently with a single switch case:
+```C++
+switch (Instr.getOpcode()) {
+    case Instruction::Alloca: ...; break;
+    case Instruction::Add:    ...; break;
+    case Instruction::Load:   ...; break;
+    case Instruction::Br:     ...; break;
+}
+```
+Downcasting with `dyn_cast`, on the other hand, gives us access to specific member functions of the derived class. In the conditional branch case, the `isConditional` function is only available in the `BranchInst` class, not implemented in the base `Instruction` class. A common gotcha in using `dyn_cast` is putting in the pointer type instead of the class type in the template parameter.
+```C++
+// This will not compile...
+// The compiler will spit out screens of barely comprehensible errors.
+BranchInst* BrInstr = dyn_cast<BranchInst*>(Instr);
+```
+The last filtering technique is quite straight forward, but is less used in practice because it offers similar functionality as the fist technique, while incurring more overhead.
