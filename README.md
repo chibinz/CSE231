@@ -1,12 +1,18 @@
 # CSE231
 Notes and projects following UC San Diego's Advanced Compilers course
 
-## Collecting Static Instruction Counts
-
-### Running
+## Running
 ```sh
+# Build all the passes
+mkdir Build
+meson Build
+ninja -C Build
+
+# Run a pass
 opt -load-pass-plugin ./Build/libCountStaticInstructions.so -passes=csi ./Tests/<input>.ll -disable-output
 ```
+
+## Collecting Static Instruction Counts
 
 ### Sample Output
 ```text
