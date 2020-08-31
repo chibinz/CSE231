@@ -1,3 +1,5 @@
+#pragma once
+
 #include <map>
 
 template<typename U, typename V>

@@ -2,6 +2,7 @@
 #include <set>
 
 #include "Bimap.h"
+#include "HelperFunctions.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -13,33 +14,8 @@ static auto PASS_NAME = "ReachingDefinitionPass";
 static auto PASS_VERSION = "v0.1";
 static auto ARGUMENT_NAME = "reaching";
 
-// Stuffs to implement
-// Transfer functions - operate on instructions
-// Join operator - operate on basic blocks
-// Instruction indexing
-
-Bimap<Instruction *, unsigned> InstrIndexBimap;
-
-auto noRetValue(Instruction &I) -> bool {
-  auto opcode = I.getOpcode();
-
-  return opcode == Instruction::Br || opcode == Instruction::Ret ||
-         opcode == Instruction::Switch || opcode == Instruction::Store;
-}
-
-auto indexInstructions(Function &F) {
-  auto count = 0;
-
-  for (auto &BB : F) {
-    for (auto &I : BB) {
-      count += 1;
-      InstrIndexBimap.insert(&I, count);
-    }
-  }
-}
-
 /// Return set of predecessor(s) of a given instruction
-auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
+static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
   std::set<Instruction *> result = {};
   auto prev = I.getPrevNode();
   auto parentBlock = I.getParent();
@@ -61,7 +37,8 @@ auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
   return result;
 }
 
-auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
+/// Return set of successors of a given instruction
+static auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
   std::set<Instruction *> result = {};
   auto next = I.getNextNode();
 
@@ -79,11 +56,16 @@ auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
 namespace {
 struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    indexInstructions(F);
+    auto instrIndexBimap = indexInstructions(F);
 
+    // Definitions going out from an instruction
     std::map<Instruction *, std::set<Instruction *>> out;
+
+    // Definitions flowing into an instruction
     std::map<Instruction *, std::set<Instruction *>> in;
 
+    // Set of instructions whose predecessors's `out` set (its own `in` set)
+    // changed in the last iterations
     std::set<Instruction *> changed;
 
     // Initialize
@@ -96,8 +78,7 @@ struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
     }
 
     while (!changed.empty()) {
-      auto node = *changed.begin();
-      changed.erase(changed.begin());
+      auto node = pop(changed);
 
       for (auto &pred : getInstrPred(*node)) {
         // `merge` method of `std::set` actually clears the second set!
@@ -113,6 +94,8 @@ struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
       auto old_out = out[node];
       out[node] = in[node];
 
+      // `Br`, `Ret`, and `Store`, etc. do not have a return value, and thus
+      // does not generate a definition
       if (!noRetValue(*node)) {
         out[node].insert(node);
       }
@@ -125,17 +108,18 @@ struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
       }
     }
 
+    // Print out reaching definitions for each instruction
     for (auto &[instr, defs] : out) {
-      errs() << InstrIndexBimap.find(instr) << ":\t";
+      errs() << instrIndexBimap.find(instr) << ":\t";
       instr->print(errs());
       errs() << ":\t{";
       for (auto &def : defs) {
-        errs() << InstrIndexBimap.find(def) << " ";
+        errs() << instrIndexBimap.find(def) << " ";
       }
       errs() << "}\n";
     }
 
-    return PreservedAnalyses::none();
+    return PreservedAnalyses::all();
   }
 };
 } // namespace
