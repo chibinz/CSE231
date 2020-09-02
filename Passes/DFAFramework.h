@@ -9,21 +9,23 @@ using namespace llvm;
 /// Generic class for representing lattice values / nodes
 /// The meet operator is used for composing several lattice values
 /// and the equal operator is used to check if a lattice has changed
-class Info {
-public:
-  virtual ~Info() {}
-  /// Convenience function for test and debug printing
-  virtual auto dump() -> std::string = 0;
-  /// Check if 2 lattice values are equivalent to each other
-  static auto equal(const Info *a, const Info *b) -> bool;
-  /// Compose 2 lattice values into a new one
-  /// Should be 1. idempotent 2. commutative 3. associative
-  static auto meet(const Info *a, const Info *b) -> Info *;
-};
+// class Info {
+// public:
+//   virtual ~Info() {}
+//   /// Convenience function for test and debug printing
+//   virtual auto dump() -> std::string = 0;
+
+//   /// Check if 2 lattice values are equivalent to each other
+//   virtual auto operator==(const Info &other) const -> bool = 0;
+
+//   /// Compose 2 lattice values into a new one
+//   /// Should be 1. idempotent 2. commutative 3. associative
+//   virtual auto operator^(const Info &other) const -> Info * = 0;
+// };
 
 template <class Info, bool Direction> class DataFlowAnalysis {
 public:
-  DataFlowAnalysis(Info *lattice_top, Function &F): func(F){
+  DataFlowAnalysis(Info lattice_top, Function &F) : func(F) {
     for (auto &BB : F) {
       for (auto &I : BB) {
         in[&I] = lattice_top;
@@ -42,7 +44,7 @@ public:
 
       // Apply `meet` operators to output values of all predecessors
       for (auto &pred : getInstrPred(*node)) {
-        in[node] = Info::meet(in[node], out[pred]);
+        in[node] = in[node] ^ out[pred];
       }
 
       auto old_out = out[node];
@@ -50,7 +52,7 @@ public:
       out[node] = transferFunction(node, in[node]);
 
       // Add to worklist if output changed
-      if (!Info::equal(out[node], old_out)) {
+      if (!(out[node] == old_out)) {
         for (auto &succ : getInstrSucc(*node)) {
           worklist.insert(succ);
         }
@@ -60,10 +62,10 @@ public:
 
   virtual auto print() -> void = 0;
 
-  virtual auto transferFunction(Instruction *instr, Info *input) -> Info * = 0;
+  virtual auto transferFunction(Instruction *instr, Info input) -> Info = 0;
 
-  std::map<Instruction *, Info *> in;
-  std::map<Instruction *, Info *> out;
+  std::map<Instruction *, Info> in;
+  std::map<Instruction *, Info> out;
   std::set<Instruction *> worklist;
   Function &func;
 };

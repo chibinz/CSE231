@@ -96,3 +96,31 @@ There are quite a few distinction between the project requirement and the textbo
 - When doing a union for 2 sets, be careful with `std::set::merge`. A.merge(B) does not have a return value (C = A.merge(b) will not compile), and the merge operation actually clears set B. I was trying to print out reaching definitions for each instruction at the end of the function pass, but found out that all but the terminating instructions' *out* set is empty. It took me quite a well to figure what the problem was(Rust's borrow checker won't allow such things to happen...)
 - Inconsistency in getting the last and first instruction of a basic block. To get the last instruction, I used the `getTerminator` method. So I was expecting `getLeader` method of some sort to get me the first instruction...The right method to use turned out to be `front`. Since `BasicBlock` is an iterable class, it shouldn't be surprising, but what really struck me was that the `back` method was deleted. What is the rationale behind such weirdness..."
 - To make a copy of custom structure in Rust, you have to explicitly the `clone` method. In C++, this seems to be done by overloading operator `=`...
+
+
+## Generic Framework
+###
+```C++
+//---- Inheriting constructors ----//
+class B : public A {
+    // Inherit all constructors of base class A
+    using A::A;
+}
+
+//---- virtual function weirdness ----//
+// Must be overriden
+virtual auto func_name() = 0;
+
+// Actually both a declaration and a definition / implementation
+virtual auto func_name() {}
+
+// What about the following?
+virtual auto func_name();
+virtual auto func_name() {};
+```
+
+- Unnecessary polymorphic Info type?
+  Delete base `Info` class, and remove inheritance declaration(:public Info), code compiles just fine...
+- Questionable use of static functions
+  The point of `Info` being an abstract class is that its derived class must implement the `equal` and `meet` operator. Static function are specific to each class and cannot be virtual, i.e. derived class doesn't have to implement it. If this is the case, why not just use virtual operator overloading? The compiler does not check whether the derived class has function `equal` and `meet` function when `Info` is passed in as template parameter, but the linker will complain undefined reference...
+- I previously thought that derived class must implement pure virtual functions, or else the compiler would complain...But this doesn't seem to be case, it would compile just fine
