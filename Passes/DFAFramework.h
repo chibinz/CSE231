@@ -3,6 +3,7 @@
 
 #include "HelperFunctions.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
@@ -60,10 +61,28 @@ public:
     }
   }
 
-  virtual auto print() -> void = 0;
+  virtual auto print() -> void {
+    auto map = indexInstrs(func);
+    for (auto &BB : func) {
+      for (auto &I : BB) {
+        errs() << map.find(&I) << "\t:";
+        I.print(errs());
+        errs() << "\n"
+               << "in"
+               << "\t: ";
+        in[&I].print(map);
+        errs() << "\n"
+               << "out"
+               << "\t: ";
+        out[&I].print(map);
+        errs() << "\n";
+      }
+    }
+  }
 
   virtual auto transferFunction(Instruction *instr, Info input) -> Info = 0;
 
+private:
   std::map<Instruction *, Info> in;
   std::map<Instruction *, Info> out;
   std::set<Instruction *> worklist;

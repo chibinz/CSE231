@@ -15,7 +15,11 @@ public:
   DefInfo() {}
   DefInfo(std::set<Instruction *> set) : defs(set) {}
 
-  // auto dump() -> std::string { return ""; }
+  auto print(Bimap<Instruction*, unsigned> &instrMap) -> void {
+    for (auto &def : defs) {
+      errs() << instrMap.find(def) << " ";
+    }
+  }
 
   auto operator==(const DefInfo &other) const -> bool {
     return defs == other.defs;
@@ -32,25 +36,6 @@ class ReachingDefinitionAnalysis : public DataFlowAnalysis<DefInfo, true> {
 public:
   // Inherit constructor
   using DataFlowAnalysis::DataFlowAnalysis;
-
-  virtual ~ReachingDefinitionAnalysis() {}
-
-  virtual auto print() -> void {
-    auto map = indexInstrs(func);
-    for (auto &BB : func) {
-      for (auto &I : BB) {
-        errs() << map.find(&I) << "\t:\t";
-        I.print(errs());
-        errs() << "\n"
-               << "defs"
-               << "\t:\t";
-        for (auto &defs : out[&I].defs) {
-          errs() << map.find(defs) << " ";
-        }
-        errs() << "\n";
-      }
-    }
-  }
 
   virtual auto transferFunction(Instruction *instr, DefInfo input) -> DefInfo {
     return DefInfo(set::union2(input.defs, {instr}));
