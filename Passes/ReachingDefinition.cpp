@@ -4,7 +4,6 @@
 #include "Bimap.h"
 #include "HelperFunctions.h"
 #include "llvm/IR/Instruction.h"
-#include "llvm/IR/Type.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 
@@ -13,45 +12,6 @@ using namespace llvm;
 static auto PASS_NAME = "ReachingDefinitionPass";
 static auto PASS_VERSION = "v0.1";
 static auto ARGUMENT_NAME = "reaching";
-
-/// Return set of predecessor(s) of a given instruction
-static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
-  std::set<Instruction *> result = {};
-  auto prev = I.getPrevNode();
-  auto parentBlock = I.getParent();
-
-  // Predecessors of an instruction come in 3 cases
-  // 1. First instruction in function => {}
-  // 2. First instruction in basic block but not first in function
-  //    => {Terminators of preceding basic block(s)}
-  // 3. Following instructions in a basic block => {Previous instruction}
-
-  if (prev == nullptr) {
-    for (auto pred : predecessors(parentBlock)) {
-      result.insert(pred->getTerminator());
-    }
-  } else {
-    result.insert(prev);
-  }
-
-  return result;
-}
-
-/// Return set of successors of a given instruction
-static auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
-  std::set<Instruction *> result = {};
-  auto next = I.getNextNode();
-
-  if (next == nullptr) {
-    for (auto succ : successors(I.getParent())) {
-      result.insert(&succ->front());
-    }
-  } else {
-    result.insert(next);
-  }
-
-  return result;
-}
 
 namespace {
 struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {

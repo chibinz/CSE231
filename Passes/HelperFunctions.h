@@ -4,6 +4,7 @@
 #include <set>
 
 #include "Bimap.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
 
@@ -32,7 +33,7 @@ static auto pop(std::set<T> &set) -> T {
 
 template <typename T>
 /// Return union of 2 sets, append `2` to avoid conflict with keyword union
-static auto union2(std::set<T> &a, std::set<T> &b) -> std::set<T> {
+static auto union2(const std::set<T> &a, const std::set<T> &b) -> std::set<T> {
   auto copy_a = std::set<T>(a);
   auto copy_b = std::set<T>(b);
   copy_a.merge(copy_b);
@@ -57,9 +58,48 @@ static inline auto indexInstrs(Function &F) {
 
 /// Return true if given instruction does not have a return value,
 /// i.e. opcode = `Br` / `Ret` / `Switch` / `Store`.
-static inline auto noRetValue(Instruction &I) -> bool {
+static inline auto noRetValue(const Instruction &I) -> bool {
   auto opcode = I.getOpcode();
 
   return opcode == Instruction::Br || opcode == Instruction::Ret ||
          opcode == Instruction::Switch || opcode == Instruction::Store;
+}
+
+/// Return set of predecessor(s) of a given instruction
+static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
+  std::set<Instruction *> result = {};
+  auto prev = I.getPrevNode();
+  auto parentBlock = I.getParent();
+
+  // Predecessors of an instruction come in 3 cases
+  // 1. First instruction in function => {}
+  // 2. First instruction in basic block but not first in function
+  //    => {Terminators of preceding basic block(s)}
+  // 3. Following instructions in a basic block => {Previous instruction}
+
+  if (prev == nullptr) {
+    for (auto pred : predecessors(parentBlock)) {
+      result.insert(pred->getTerminator());
+    }
+  } else {
+    result.insert(prev);
+  }
+
+  return result;
+}
+
+/// Return set of successors of a given instruction
+static auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
+  std::set<Instruction *> result = {};
+  auto next = I.getNextNode();
+
+  if (next == nullptr) {
+    for (auto succ : successors(I.getParent())) {
+      result.insert(&succ->front());
+    }
+  } else {
+    result.insert(next);
+  }
+
+  return result;
 }
