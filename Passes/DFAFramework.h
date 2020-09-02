@@ -1,5 +1,3 @@
-#pragma once
-
 #include <map>
 #include <string>
 
@@ -13,28 +11,29 @@ using namespace llvm;
 /// and the equal operator is used to check if a lattice has changed
 class Info {
 public:
-  Info(const Info &other){};
+  virtual ~Info() {}
   /// Convenience function for test and debug printing
-  virtual auto dump() -> std::string;
+  virtual auto dump() -> std::string = 0;
   /// Check if 2 lattice values are equivalent to each other
-  static auto equal(const Info &a, const Info &b) -> bool;
+  static auto equal(const Info *a, const Info *b) -> bool;
   /// Compose 2 lattice values into a new one
   /// Should be 1. idempotent 2. commutative 3. associative
-  static auto meet(const Info &a, const Info &b) -> Info;
+  static auto meet(const Info *a, const Info *b) -> Info *;
 };
 
-template <class Info, bool Direction>
-class DataFlowAnalysis {
+template <class Info, bool Direction> class DataFlowAnalysis {
 public:
-  DataFlowAnalysis(Info lattice_top, Function &F) {
+  DataFlowAnalysis(Info *lattice_top, Function &F): func(F){
     for (auto &BB : F) {
       for (auto &I : BB) {
-        in[&I] = top;
-        out[&I] = top;
+        in[&I] = lattice_top;
+        out[&I] = lattice_top;
         worklist.insert(&I);
       }
     }
-  };
+  }
+
+  virtual ~DataFlowAnalysis() {}
 
   auto run() -> void {
     while (!worklist.empty()) {
@@ -57,14 +56,14 @@ public:
         }
       }
     }
-  };
+  }
 
-  static auto transferFunction(const Instruction *instr, const Info &input)
-      -> Info;
+  virtual auto print() -> void = 0;
 
-private:
-  std::map<Instruction *, Info> in;
-  std::map<Instruction *, Info> out;
+  virtual auto transferFunction(Instruction *instr, Info *input) -> Info * = 0;
+
+  std::map<Instruction *, Info *> in;
+  std::map<Instruction *, Info *> out;
   std::set<Instruction *> worklist;
-  Instruction *entry;
+  Function &func;
 };

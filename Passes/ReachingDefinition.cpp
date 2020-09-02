@@ -1,9 +1,4 @@
-#include <map>
-#include <set>
-
-#include "Bimap.h"
-#include "HelperFunctions.h"
-#include "llvm/IR/Instruction.h"
+#include "DFAFramework.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 
@@ -13,72 +8,60 @@ static auto PASS_NAME = "ReachingDefinitionPass";
 static auto PASS_VERSION = "v0.1";
 static auto ARGUMENT_NAME = "reaching";
 
+class DefInfo : public Info {
+public:
+  DefInfo() {}
+  DefInfo(std::set<Instruction *> set) : defs(set) {}
+  virtual ~DefInfo() {}
+  virtual auto dump() -> std::string { return ""; }
+
+  static auto equal(const DefInfo *a, const DefInfo *b) -> bool {
+    return a->defs == b->defs;
+  }
+
+  static auto meet(const DefInfo *a, const DefInfo *b) -> DefInfo * {
+    return new DefInfo(set::union2(a->defs, b->defs));
+  }
+
+  std::set<Instruction *> defs;
+};
+
+class ReachingDefinitionAnalysis : public DataFlowAnalysis<DefInfo, true> {
+public:
+  ReachingDefinitionAnalysis(DefInfo *l, Function &F)
+      : DataFlowAnalysis(l, F) {}
+
+  virtual ~ReachingDefinitionAnalysis() {}
+
+  virtual auto print() -> void {
+    auto map = indexInstrs(func);
+    for (auto &BB : func) {
+      for (auto &I : BB) {
+        errs() << map.find(&I) << "\t: ";
+        I.print(errs());
+        errs() << "\n" << "defs" << "\t: ";
+        for (auto &defs: out[&I]->defs) {
+          errs() << map.find(defs) << " ";
+        }
+        errs() << "\n";
+      }
+    }
+  }
+
+  virtual auto transferFunction(Instruction *instr, DefInfo *input)
+      -> DefInfo * {
+    std::set<Instruction *> new_set = {instr};
+    return new DefInfo(set::union2(input->defs, new_set));
+  }
+};
+
 namespace {
 struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    auto instrIndexBimap = indexInstrs(F);
-
-    // Definitions going out from an instruction
-    std::map<Instruction *, std::set<Instruction *>> out;
-
-    // Definitions flowing into an instruction
-    std::map<Instruction *, std::set<Instruction *>> in;
-
-    // Set of instructions whose predecessors's `out` set (its own `in` set)
-    // changed in the last iterations
-    std::set<Instruction *> changed;
-
-    // Initialize
-    for (auto &BB : F) {
-      for (auto &I : BB) {
-        out[&I] = std::set<Instruction *>();
-        in[&I] = std::set<Instruction *>();
-        changed.insert(&I);
-      }
-    }
-
-    while (!changed.empty()) {
-      auto node = set::pop(changed);
-
-      for (auto &pred : getInstrPred(*node)) {
-        // `merge` method of `std::set` actually clears the second set!
-        // took me hours of debugging!
-        // auto copy = out[pred];
-        // in[node].merge(copy);
-        in[node] = set::union2(in[node], out[pred]);
-      }
-
-      // Under the ssa assumption:
-      // Only one definition per instruction, gen[node] is the return value of
-      // node No definition is killed, SSA implies no redefinition of variables
-
-      auto old_out = out[node];
-      out[node] = in[node];
-
-      // `Br`, `Ret`, and `Store`, etc. do not have a return value, and thus
-      // does not generate a definition
-      if (!noRetValue(*node)) {
-        out[node].insert(node);
-      }
-
-      // If `out[node]` is updated, add all successors of `node` to `changed`
-      if (old_out != out[node]) {
-        for (auto &succ : getInstrSucc(*node)) {
-          changed.insert(succ);
-        }
-      }
-    }
-
-    // Print out reaching definitions for each instruction
-    for (auto &[instr, defs] : out) {
-      errs() << instrIndexBimap.find(instr) << ":\t";
-      instr->print(errs());
-      errs() << ":\t{";
-      for (auto &def : defs) {
-        errs() << instrIndexBimap.find(def) << " ";
-      }
-      errs() << "}\n";
-    }
+    auto top = new DefInfo(std::set<Instruction *>());
+    auto analysis = ReachingDefinitionAnalysis(top, F);
+    analysis.run();
+    analysis.print();
 
     return PreservedAnalyses::all();
   }
