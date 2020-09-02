@@ -56,7 +56,7 @@ static auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
 namespace {
 struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    auto instrIndexBimap = indexInstructions(F);
+    auto instrIndexBimap = indexInstrs(F);
 
     // Definitions going out from an instruction
     std::map<Instruction *, std::set<Instruction *>> out;
@@ -78,13 +78,14 @@ struct ReachingDefinitionPass : public PassInfoMixin<ReachingDefinitionPass> {
     }
 
     while (!changed.empty()) {
-      auto node = pop(changed);
+      auto node = set::pop(changed);
 
       for (auto &pred : getInstrPred(*node)) {
         // `merge` method of `std::set` actually clears the second set!
         // took me hours of debugging!
-        auto copy = out[pred];
-        in[node].merge(copy);
+        // auto copy = out[pred];
+        // in[node].merge(copy);
+        in[node] = set::union2(in[node], out[pred]);
       }
 
       // Under the ssa assumption:
