@@ -65,6 +65,12 @@ static inline auto noRetValue(const Instruction &I) -> bool {
          opcode == Instruction::Switch || opcode == Instruction::Store;
 }
 
+/// Return true if the given instruction has a return value,
+/// e.g. `Add`, `Mul`, `Select`, `Call`
+static inline auto hasRetValue(const Instruction &I) -> bool {
+  return !noRetValue(I);
+}
+
 /// Return set of predecessor(s) of a given instruction
 static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
   std::set<Instruction *> result = {};
