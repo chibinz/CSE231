@@ -37,7 +37,8 @@ public:
   std::set<Instruction *> defs;
 };
 
-class ReachingDefinitionAnalysis : public DataFlowAnalysis<DefInfo, true> {
+class ReachingDefinitionAnalysis
+    : public DataFlowAnalysis<DefInfo, AnalysisDirection::Forward> {
 public:
   /// Inherit constructor
   using DataFlowAnalysis::DataFlowAnalysis;
