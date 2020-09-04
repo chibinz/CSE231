@@ -18,11 +18,11 @@ public:
     B2AMap.insert({b, a});
   }
 
-  auto find(U a) {
+  auto operator[](U a) {
     return A2BMap[a];
   }
 
-  auto find(V b) {
+  auto operator[](V b) {
     return B2AMap[b];
   }
 };

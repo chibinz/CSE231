@@ -72,7 +72,7 @@ static inline auto hasRetValue(const Instruction &I) -> bool {
 }
 
 /// Return set of predecessor(s) of a given instruction
-static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
+static inline auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
   std::set<Instruction *> result = {};
   auto prev = I.getPrevNode();
   auto parentBlock = I.getParent();
@@ -95,7 +95,7 @@ static auto getInstrPred(Instruction &I) -> std::set<Instruction *> {
 }
 
 /// Return set of successors of a given instruction
-static auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
+static inline auto getInstrSucc(Instruction &I) -> std::set<Instruction *> {
   std::set<Instruction *> result = {};
   auto next = I.getNextNode();
 

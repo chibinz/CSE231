@@ -19,7 +19,7 @@ public:
   /// Called by `print` method of class `DataFlowAnalysis`
   auto print(Bimap<Instruction *, unsigned> &instrMap) -> void {
     for (auto &def : defs) {
-      errs() << instrMap.find(def) << " ";
+      errs() << instrMap[def] << " ";
     }
   }
 

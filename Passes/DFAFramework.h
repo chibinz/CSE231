@@ -90,7 +90,7 @@ public:
     auto map = indexInstrs(func);
     for (auto &BB : func) {
       for (auto &I : BB) {
-        errs() << map.find(&I) << "\t:";
+        errs() << map[&I] << "\t:";
         I.print(errs());
         errs() << "\n"
                << "in"

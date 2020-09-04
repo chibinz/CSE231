@@ -17,7 +17,7 @@ public:
 
   /// Print definition set for a given statement
   /// Called by `print` method of class `DataFlowAnalysis`
-  auto print(Bimap<Instruction *, unsigned> &instrMap) -> void {
+  auto print(Bimap<Instruction *, unsigned> &) -> void {
     for (auto &def : defs) {
         def->printAsOperand(errs());
         errs() << " ";
