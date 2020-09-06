@@ -132,3 +132,19 @@ Currently how summary for each project is organized is a little bit messy. I ass
 Testing. New passes are added every now and then, but I never took the time to actually test my implementation against the reference implementation. Perhaps because 1. The reference pass uses the legacy pass scheduler which seems to schedule functions / basicblocks differently than the latest pass manager. 2. A lack of test corpus. While I've pulled some tests from other repositories on GitHub, it's not clear how strong do they stand up against edge cases. In order for my passes to be usable by other people, automated testing and a strong test suite must be available. Now that I have the generic framework up and working, implementing new dataflow analysis will be, in theory, at least as simple as filling out the lattice table. So implementing new analyses won't be much of a burden. My initial observation shows the output of my live variable analysis pass drastically differs from the reference passes'. I suspect it has something to do with phi instructions, which I treated just as any other instruction with a return value. Hope the passes I implemented will be of use to someone who come upon this repository.
 
 I also have a plan of an extra wrap up part that make uses of all the passes that I've written and composes them into a compiler backend. But that will have to wait until I finish all the requiremenst of the project. There are also little Chinese literature on this topic, so writing a Chinese version when I'm not in the mood of progress seems to be alternative. So far so good, stepping into client analysis. The last part, Interprocedural analyses, from what learned in class, is hard. I still have little clue what I have to do in project 4. Anyways, keep up the pace, it's not about a day or a week, it's about months and semester's of prolonged effort.
+
+## Reaching Definition (Generic)
+- Direction
+    - forward
+    - `AnalysisDirection::Forward`
+- Domain of lattice values
+    - set of reaching definitions
+    - `std::set<Instruction *>`
+- Transfer function
+    - out[i] = gen(i) U (in[i] - kill(i))
+        - i is the current instruction
+        - kill(i) are assignments (instructions) with the same lvalue as i
+        - gen(i) is the lvalue of current instruction if i has a return value otherwise empty set
+- Join operator
+    - union of 2 sets
+    - `set::union2`
