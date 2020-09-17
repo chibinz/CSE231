@@ -20,6 +20,7 @@ public:
   auto print(Bimap<Instruction *, unsigned> &) -> void {
     for (auto &[p, vs] : ptr2val) {
       p->printAsOperand(errs());
+      errs() << ":";
       for (auto v : vs) {
         errs() << "\n";
         v->printAsOperand(errs());
@@ -72,7 +73,7 @@ public:
     auto &map = input.ptr2val;
     switch (instr->getOpcode()) {
     case Instruction::Alloca: {
-      map[instr] = {instr};
+      map[instr] = {instr->getOperand(0)};
       break;
     }
     case Instruction::BitCast:
