@@ -6,7 +6,7 @@ using namespace llvm;
 
 static auto PASS_NAME = "MayPointToAnalysis";
 static auto PASS_VERSION = "v0.1";
-static auto ARGUMENT_NAME = "";
+static auto ARGUMENT_NAME = "maypointto";
 
 class PtrInfo {
 public:
@@ -17,7 +17,14 @@ public:
 
   /// Print definition set for a given statement
   /// Called by `print` method of class `DataFlowAnalysis`
-  auto print(Bimap<Instruction *, unsigned> &) -> void {}
+  auto print(Bimap<Instruction *, unsigned> &) -> void {
+    for (auto &[p, v] : ptr2val) {
+      p->printAsOperand(errs());
+      errs() << "\t";
+      v->printAsOperand(errs());
+      errs() << "\n";
+    }
+  }
 
   /// Return true if definition sets have the same definitions
   auto operator==(const PtrInfo &other) const -> bool {
@@ -30,12 +37,19 @@ public:
     return PtrInfo(set::union2(ptr2val, other.ptr2val));
   }
 
+  auto add_ptr_alias(Value *ptr, Value *alias) {
+    for (auto &[p, v] : ptr2val) {
+      if (p == ptr) {
+        ptr2val.insert({alias, v});
+      }
+    }
+  }
 
   std::set<std::pair<Value *, Value *>> ptr2val;
 };
 
 class MayPointToAnalysis
-    : public DataFlowAnalysis<PtrInfo, AnalysisDirection::Backward> {
+    : public DataFlowAnalysis<PtrInfo, AnalysisDirection::Forward> {
 public:
   /// Inherit constructor
   using DataFlowAnalysis::DataFlowAnalysis;
@@ -49,25 +63,20 @@ public:
     }
     case Instruction::BitCast:
     case Instruction::GetElementPtr: {
-      auto value = instr->getOperand(0);
-      for (auto &[p, v] : set) {
-        if (p == value) {
-          set.insert({instr, v});
-        }
-      }
+      input.add_ptr_alias(instr->getOperand(0), instr);
       break;
     }
     case Instruction::Load: {
       auto ptr = instr->getOperand(0);
-      auto pointee = std::set<Value *>();
-      for (auto &[p, v] : set) {
+      auto xs = std::set<Value *>();
+      for (auto &[p, x] : set) {
         if (p == ptr) {
-          pointee.insert(v);
+          xs.insert(x);
         }
       }
-      for (auto &[p, v] : set) {
-        if (pointee.find(p) != pointee.end()) {
-          set.insert({instr, v});
+      for (auto &[x, y] : set) {
+        if (xs.find(x) != xs.end()) {
+          set.insert({instr, y});
         }
       }
       break;
@@ -76,38 +85,28 @@ public:
       auto val = instr->getOperand(0);
       auto ptr = instr->getOperand(1);
       auto xs = std::set<Value *>();
-      for (auto &[p, v] : set) {
+      for (auto &[p, x] : set) {
         if (p == val) {
-          xs.insert(v);
+          xs.insert(x);
         }
       }
-      for (auto &[p, v] : set) {
+      for (auto &[p, y] : set) {
         if (p == ptr) {
           for (auto x : xs) {
-            set.insert({v, x});
+            set.insert({y, x});
           }
         }
       }
       break;
     }
     case Instruction::Select: {
-      auto val1 = instr->getOperand(1);
-      auto val2 = instr->getOperand(2);
-      for (auto &[p, v] : set) {
-        if (p == val1 || p == val2) {
-          set.insert({instr, v});
-        }
-      }
+      input.add_ptr_alias(instr->getOperand(1), instr);
+      input.add_ptr_alias(instr->getOperand(2), instr);
       break;
     }
-
     case Instruction::PHI: {
       for (auto &op : instr->operands()) {
-        for (auto &[p, v] : set) {
-          if (p == op) {
-            set.insert({instr, v});
-          }
-        }
+        input.add_ptr_alias(op, instr);
       }
       break;
     }
