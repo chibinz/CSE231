@@ -9,3 +9,4 @@ shared_library('CountDynamicInstructions', 'Passes/CountDynamicInstructions.cpp'
 shared_library('BranchBias', 'Passes/BranchBias.cpp', dependencies: llvm_dep)
 shared_library('ReachingDefinition', 'Passes/ReachingDefinition.cpp', dependencies: llvm_dep)
 shared_library('LiveVariable', 'Passes/LiveVariable.cpp', dependencies: llvm_dep)
+shared_library('MayPointToAnalysis', 'Passes/MayPointToAnalysis.cpp', dependencies: llvm_dep)
