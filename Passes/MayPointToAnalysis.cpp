@@ -13,15 +13,17 @@ public:
   /// Interestingly, while the default constructor is never explicitly called,
   /// removing it will result in a compile error
   PtrInfo() {}
-  PtrInfo(std::set<std::pair<Value *, Value *>> set) : ptr2val(set) {}
+  PtrInfo(std::map<Value *, std::set<Value *>> map) : ptr2val(map) {}
 
   /// Print definition set for a given statement
   /// Called by `print` method of class `DataFlowAnalysis`
   auto print(Bimap<Instruction *, unsigned> &) -> void {
-    for (auto &[p, v] : ptr2val) {
+    for (auto &[p, vs] : ptr2val) {
       p->printAsOperand(errs());
-      errs() << "\t";
-      v->printAsOperand(errs());
+      for (auto v : vs) {
+        errs() << "\n";
+        v->printAsOperand(errs());
+      }
       errs() << "\n";
     }
   }
@@ -34,18 +36,30 @@ public:
   /// Meet operator for reaching definition analysis is simply union for
   /// definition set
   auto operator^(const PtrInfo &other) const -> PtrInfo {
-    return PtrInfo(set::union2(ptr2val, other.ptr2val));
+    // Make a copy of our own ptr2val map
+    auto result = ptr2val;
+    for (const auto &[p, v] : other.ptr2val) {
+      if (result.find(p) != result.end()) {
+        result[p] = set::union2(result[p], v);
+      } else {
+        result[p] = v;
+      }
+    }
+
+    return result;
   }
 
   auto add_ptr_alias(Value *ptr, Value *alias) {
-    for (auto &[p, v] : ptr2val) {
-      if (p == ptr) {
-        ptr2val.insert({alias, v});
+    if (ptr2val.find(ptr) != ptr2val.end()) {
+      if (ptr2val.find(alias) != ptr2val.end()) {
+        ptr2val[alias] = set::union2(ptr2val[ptr], ptr2val[alias]);
+      } else {
+        ptr2val[alias] = ptr2val[ptr];
       }
     }
   }
 
-  std::set<std::pair<Value *, Value *>> ptr2val;
+  std::map<Value *, std::set<Value *>> ptr2val;
 };
 
 class MayPointToAnalysis
@@ -55,10 +69,10 @@ public:
   using DataFlowAnalysis::DataFlowAnalysis;
 
   virtual auto transferFunction(Instruction *instr, PtrInfo input) -> PtrInfo {
-    auto &set = input.ptr2val;
+    auto &map = input.ptr2val;
     switch (instr->getOpcode()) {
     case Instruction::Alloca: {
-      set.insert({instr, instr});
+      map[instr] = {instr};
       break;
     }
     case Instruction::BitCast:
@@ -68,15 +82,9 @@ public:
     }
     case Instruction::Load: {
       auto ptr = instr->getOperand(0);
-      auto xs = std::set<Value *>();
-      for (auto &[p, x] : set) {
-        if (p == ptr) {
-          xs.insert(x);
-        }
-      }
-      for (auto &[x, y] : set) {
-        if (xs.find(x) != xs.end()) {
-          set.insert({instr, y});
+      if (map.find(ptr) != map.end()) {
+        for (auto &x : map[ptr]) {
+          input.add_ptr_alias(x, instr);
         }
       }
       break;
@@ -84,17 +92,11 @@ public:
     case Instruction::Store: {
       auto val = instr->getOperand(0);
       auto ptr = instr->getOperand(1);
-      auto xs = std::set<Value *>();
-      for (auto &[p, x] : set) {
-        if (p == val) {
-          xs.insert(x);
-        }
-      }
-      for (auto &[p, y] : set) {
-        if (p == ptr) {
-          for (auto x : xs) {
-            set.insert({y, x});
-          }
+      if (map.find(val) != map.end() && map.find(ptr) != map.end()) {
+        auto copy = map[ptr];
+        // The following loop might alter map[ptr], a temporary fix
+        for (auto &y: copy) {
+          input.add_ptr_alias(val, y);
         }
       }
       break;
