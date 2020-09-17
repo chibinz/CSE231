@@ -148,3 +148,18 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
 - Join operator
     - union of 2 sets
     - `set::union2`
+
+## Live Variable Analysis (Generic)
+- Direction
+    - backward
+    - `AnalysisDirection::Backward`
+- Domain of lattice values
+    - set of live variables
+    - `std::set<Value *>`
+- Transfer function
+    - out[i] = use(i) U (in[i] - def(i))
+        - use(i) is the operands of current instruction, or rvalues
+        - def(i) is the return value of current instruction if any
+- Join operator
+    - union of sets
+    - `set::union2`
