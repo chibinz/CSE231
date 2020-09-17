@@ -149,7 +149,7 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
     - union of 2 sets
     - `set::union2`
 
-## Live Variable Analysis (Generic)
+## Live Variable Analysis
 - Direction
     - backward
     - `AnalysisDirection::Backward`
@@ -163,3 +163,30 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
 - Join operator
     - union of sets
     - `set::union2`
+
+## May Point to Analysis
+- Direction
+    - Forward
+    - `AnalysisDirection::Forward`
+- Domain of lattice values
+    - map from pointers to set of pointees
+    - `std::map<Value *, std::set<Value *>>`
+- Transfer function
+    - As defined in project description
+    - different for
+        - alloca
+        - bitcast
+        - getelementptr
+        - store
+        - load
+        - select
+        - phi
+- Join operator
+    - union of maps
+    - if the 2 maps have the same key the keys' corresponding sets are merged
+
+### Gotchas
+- If you're having problem getting `alloca` instructions, try `opt -reg2mem -S` to convert phi instructions into memory operations
+- Mutating a container while iterating it may lead to segfaults... Painful debugging
+- Referencing an uninitialized map entry will also cause segfault
+- You must add curly braces around a switch case if you want to declare local variables inside that case. `case A: {auto foo = bar; ...; break;}`

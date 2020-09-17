@@ -73,6 +73,7 @@ public:
     auto &map = input.ptr2val;
     switch (instr->getOpcode()) {
     case Instruction::Alloca: {
+      // Hack to avoid duplicate, may be wrong!
       map[instr] = {instr->getOperand(0)};
       break;
     }
