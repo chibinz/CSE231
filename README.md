@@ -190,3 +190,10 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
 - Mutating a container while iterating it may lead to segfaults... Painful debugging
 - Referencing an uninitialized map entry will also cause segfault
 - You must add curly braces around a switch case if you want to declare local variables inside that case. `case A: {auto foo = bar; ...; break;}`
+
+## Getting all uses of an llvm value
+## Inserting an llvm instruction
+## Removing an llvm instruction
+## Replacing an llvm instruction
+
+## Advantages of using the new pass manager over the legacy one
