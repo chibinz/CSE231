@@ -195,5 +195,9 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
 ## Inserting an llvm instruction
 ## Removing an llvm instruction
 ## Replacing an llvm instruction
+## Casting all types to i32 / Type casting
+## Declaring a function
+## Using functional programming idioms(map, filter, reduce) to reduce boilerplate code
 
+## LLVM pass scheduling
 ## Advantages of using the new pass manager over the legacy one
