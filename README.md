@@ -192,12 +192,30 @@ I also have a plan of an extra wrap up part that make uses of all the passes tha
 - You must add curly braces around a switch case if you want to declare local variables inside that case. `case A: {auto foo = bar; ...; break;}`
 
 ## Getting all uses of an llvm value
+```C++
+for (auto use: val->users()) { // No reference `&` before use
+    // `User` is a subtype of `Value`
+}
+```
 ## Inserting an llvm instruction
+```C++
+instr->insertBefore(Instruction *)
+```
 ## Removing an llvm instruction
+```C++
+instr->eraseFromParent() // Note that removeFromParent does not actually deletes the instruction, it is used for another purpose
+```
 ## Replacing an llvm instruction
+```C++
+instr->replaceAllUsesWith(Value *)
+instr->eraseFromParent()
+```
+Manipulating data structures while iterating over it can be a dangerous practice. In the insert case, you might be adding instructions repeatedly, causing pass manager to loop indefinitely. In the removing case, the definitions that you remove may leave behind dangling uses (reference) to it. And the replace case, the definition of the replaces instruction might not post-dominated all uses of itself. The best practice is what I called a 2 phase commit. Since iterating and changing the data structure simultaneously is so bad, we split this 2 actions into 2 phase. In the first phase, we record the instruction that we want to insert before, remove, or replace in a set or map. And then in the second phase, we use the information previously stored to accomplish our goals.
 ## Casting all types to i32 / Type casting
+LLVM while named "Low Level Virtual Machine" actually contains aggregate types such as `struct {i32, i32}`. I assume that this sort of high level type information make certain optimization easier, but it means for pass writers extra edge cases to handle. LLVM is also explicitly and strongly typed, unlike c, making it very painful to deal with type casting. Pointers and integers have dedicated instructions for casting between them.
 ## Declaring a function
 ## Using functional programming idioms(map, filter, reduce) to reduce boilerplate code
 
 ## LLVM pass scheduling
+## How to compose LLVM passes, use result of analysis pass as input
 ## Advantages of using the new pass manager over the legacy one
