@@ -11,11 +11,12 @@ static auto ARGUMENT_NAME = "constprop";
 class ConstInfo {
 public:
   ConstInfo() {}
-  ConstInfo(std::set<Instruction *> set) : consts(set) {}
+  ConstInfo(std::set<Value *> set) : consts(set) {}
 
   auto print(Bimap<Instruction *, unsigned> &instrMap) -> void {
     for (auto &def : consts) {
-      errs() << instrMap[def] << " ";
+      errs() << "\n";
+      def->printAsOperand(errs());
     }
   }
 
@@ -37,20 +38,25 @@ public:
 
   virtual auto transferFunction(Instruction *instr, ConstInfo input)
       -> ConstInfo {
-    if (!noRetValue(*instr)) {
-      input.consts.insert(instr);
+    if (auto str = dyn_cast<StoreInst>(instr)) {
+      auto ptr = str->getPointerOperand();
+      input.consts.insert(ptr);
     }
+
     return input;
   }
 };
 
 namespace {
 struct ConstantPropPass : public PassInfoMixin<ConstantPropPass> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    auto analysis = ConstantPropAnalysis({}, F);
+  PreservedAnalyses run(LazyCallGraph::SCC &InitialC, CGSCCAnalysisManager &,
+                        LazyCallGraph &, CGSCCUpdateResult &) {
+    for (auto &call : InitialC) {
+      auto analysis = ConstantPropAnalysis({}, call.getFunction());
 
-    analysis.run();
-    analysis.print();
+      analysis.run();
+      analysis.print();
+    }
 
     return PreservedAnalyses::all();
   }
@@ -62,10 +68,10 @@ llvmGetPassPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, PASS_NAME, PASS_VERSION,
           [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
+                [](StringRef Name, CGSCCPassManager &CPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
                   if (Name == ARGUMENT_NAME) {
-                    FPM.addPass(ConstantPropPass());
+                    CPM.addPass(ConstantPropPass());
                     return true;
                   } else {
                     return false;
