@@ -199,8 +199,11 @@ for (auto use: val->users()) { // No reference `&` before use
 ```
 ## Inserting an llvm instruction
 ```C++
-instr->insertBefore(Instruction *)
+BB.getFirstInsertPt();
+BB.getTerminator();
+instr->insertBefore(Instruction *);
 ```
+Never insert an instruction **before a phi node** or after the termination of a basic block, e.g. **ret, br instructions**. There is a reason why you could only **insert before** a given instruction, inserting after a terminator instruction breaks the definition of a basicblock and can be problematic. If you are that the instruction to insert after is not a terminator,use this `instr->insertBefore(anchor->getNextNode());`.
 ## Removing an llvm instruction
 ```C++
 instr->eraseFromParent() // Note that removeFromParent does not actually deletes the instruction, it is used for another purpose
@@ -214,8 +217,19 @@ Manipulating data structures while iterating over it can be a dangerous practice
 ## Casting all types to i32 / Type casting
 LLVM while named "Low Level Virtual Machine" actually contains aggregate types such as `struct {i32, i32}`. I assume that this sort of high level type information make certain optimization easier, but it means for pass writers extra edge cases to handle. LLVM is also explicitly and strongly typed, unlike c, making it very painful to deal with type casting. Pointers and integers have dedicated instructions for casting between them.
 ## Declaring a function
+```C++
+Module &M;
+auto funcType = FunctionType::get(...);
+M.getOrInsertFunction("function_name", funcType);
+```
+FunctionPass and BasicBlock pass are not allowed to insert Functions into a module because they are invoked many times over a single module.
+## Using `lit` for pass transformation validation
 ## Using functional programming idioms(map, filter, reduce) to reduce boilerplate code
 
 ## LLVM pass scheduling
+- Pass pipeline
+- Pass dependency
+- Debugging pass pipeline
+- `opt -load lib/LLVMHello.so -gvn -licm --debug-pass=Structure < hello.bc > /dev/null`
 ## How to compose LLVM passes, use result of analysis pass as input
 ## Advantages of using the new pass manager over the legacy one
