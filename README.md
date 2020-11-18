@@ -233,3 +233,6 @@ FunctionPass and BasicBlock pass are not allowed to insert Functions into a modu
 - `opt -load lib/LLVMHello.so -gvn -licm --debug-pass=Structure < hello.bc > /dev/null`
 ## How to compose LLVM passes, use result of analysis pass as input
 ## Advantages of using the new pass manager over the legacy one
+
+# Reference
+1. [2020 LLVM Developers’ Meeting: “Understanding Changes made by a Pass in the Opt Pipeline”](https://www.youtube.com/watch?v=3RCDB3_wUEM)
