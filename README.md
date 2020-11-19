@@ -234,5 +234,26 @@ FunctionPass and BasicBlock pass are not allowed to insert Functions into a modu
 ## How to compose LLVM passes, use result of analysis pass as input
 ## Advantages of using the new pass manager over the legacy one
 
+## Windows
+LLVM does not support running out-of-tree passes on windows, due to limitations of `dll` files. While it is possible to compile a pass in-tree using some hacky ways on windows, building and testing LLVM on linux or mac is much easier.
+
+## `clang` options
+- `-mllvm` # Pass one argument to `opt`
+
+## `opt` options
+- `-debug-only=<key>`
+- `-debug`
+- `-stats`
+- `-print-after/before-all`
+- `-print-after/before=<pass>`
+- `-filter-print-funcs=<func>`
+- `-filter-passes=<passes>`
+- `-print-module-scope`
+- experimental (Available LLVM 12.0.0)
+    - `-print-changed`
+    - `-print-crashed`
+    - `-print-changes`
+    - `-dot-cfg-changes`
+
 # Reference
 1. [2020 LLVM Developers’ Meeting: “Understanding Changes made by a Pass in the Opt Pipeline”](https://www.youtube.com/watch?v=3RCDB3_wUEM)
