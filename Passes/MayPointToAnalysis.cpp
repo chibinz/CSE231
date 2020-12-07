@@ -97,7 +97,7 @@ public:
       if (map.find(val) != map.end() && map.find(ptr) != map.end()) {
         auto copy = map[ptr];
         // The following loop might alter map[ptr], a temporary fix
-        for (auto &y: copy) {
+        for (auto &y : copy) {
           input.add_ptr_alias(val, y);
         }
       }

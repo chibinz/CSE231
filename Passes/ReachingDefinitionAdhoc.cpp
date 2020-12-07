@@ -14,7 +14,8 @@ static auto PASS_VERSION = "v0.1";
 static auto ARGUMENT_NAME = "reaching";
 
 namespace {
-struct ReachingDefinitionAdhocPass : public PassInfoMixin<ReachingDefinitionAdhocPass> {
+struct ReachingDefinitionAdhocPass
+    : public PassInfoMixin<ReachingDefinitionAdhocPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
     auto instrIndexBimap = indexInstrs(F);
 
@@ -32,8 +33,7 @@ struct ReachingDefinitionAdhocPass : public PassInfoMixin<ReachingDefinitionAdho
     for (auto &BB : F) {
       for (auto &I : BB) {
         out[&I] = std::set<Instruction *>();
-        in[&I] = std::set<Instruction *>()
-        changed.insert(&I);
+        in[&I] = std::set<Instruction *>() changed.insert(&I);
       }
     }
 
