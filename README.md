@@ -255,5 +255,13 @@ LLVM does not support running out-of-tree passes on windows, due to limitations 
     - `-print-changes`
     - `-dot-cfg-changes`
 
+## Use llc to generate llvm cpp code
+```sh
+clang -emit-llvm -c input.c -o tmp.bc
+llc -march=cpp tmp.bc -o output.cpp
+llc -O0 -march=cpp tmp.bc -o output.cpp
+```
+
 # Reference
 1. [2020 LLVM Developers’ Meeting: “Understanding Changes made by a Pass in the Opt Pipeline”](https://www.youtube.com/watch?v=3RCDB3_wUEM)
+2. [Generate llvm cpp code](https://fdiv.net/2012/11/16/llvm-generates-code-generates-code)
