@@ -51,6 +51,13 @@ namespace {
 struct ConstantPropPass : public PassInfoMixin<ConstantPropPass> {
   PreservedAnalyses run(LazyCallGraph::SCC &InitialC, CGSCCAnalysisManager &,
                         LazyCallGraph &, CGSCCUpdateResult &) {
+    auto &globals =
+        InitialC.begin()->getFunction().getParent()->getGlobalList();
+
+    for (auto &g : globals) {
+      errs() << g.getName() << "\n";
+    }
+
     for (auto &call : InitialC) {
       auto analysis = ConstantPropAnalysis({}, call.getFunction());
 
