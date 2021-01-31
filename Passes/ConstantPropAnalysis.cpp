@@ -38,10 +38,6 @@ public:
 
   virtual auto transferFunction(Instruction *instr, ConstInfo input)
       -> ConstInfo {
-    if (auto str = dyn_cast<StoreInst>(instr)) {
-      auto ptr = str->getPointerOperand();
-      input.consts.insert(ptr);
-    }
 
     return input;
   }
@@ -58,11 +54,28 @@ struct ConstantPropPass : public PassInfoMixin<ConstantPropPass> {
       errs() << g.getName() << "\n";
     }
 
-    for (auto &call : InitialC) {
-      auto analysis = ConstantPropAnalysis({}, call.getFunction());
+    std::set<Value *> pointers;
 
-      analysis.run();
-      analysis.print();
+    for (auto &call : InitialC) {
+      auto &F = call.getFunction();
+
+      for (auto &BB : F) {
+        for (auto &I : BB) {
+          for (auto &op : I.operands()) {
+            if (op->getType()->isPointerTy()) {
+              pointers.insert(op);
+            }
+          }
+          if (I.getType()->isPointerTy()) {
+            pointers.insert(&I);
+          }
+        }
+      }
+    }
+
+    for (auto &p : pointers) {
+      p->printAsOperand(errs());
+      errs() << "\n";
     }
 
     return PreservedAnalyses::all();
